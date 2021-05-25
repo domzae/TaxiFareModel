@@ -48,6 +48,7 @@ class Trainer():
 
     def run(self):
         """set and train the pipeline"""
+        self.set_pipeline()
         self.pipeline.fit(self.X, self.y)
 
         return self.pipeline
@@ -69,7 +70,6 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = holdout_data(df)
     # train
     trainer = Trainer(X_train, y_train)
-    trainer.set_pipeline()
     trainer.run()
     # evaluate
     rmse = trainer.evaluate(X_test, y_test)
