@@ -1,0 +1,15 @@
+artifact_uri: file:///home/dominik/code/domzae/TaxiFareModel/mlruns/1/d81fe095f26c4cee9e0205c2a8fcc000/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '1'
+lifecycle_stage: active
+name: ''
+run_id: d81fe095f26c4cee9e0205c2a8fcc000
+run_uuid: d81fe095f26c4cee9e0205c2a8fcc000
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1621938035507
+status: 1
+tags: []
+user_id: unknown

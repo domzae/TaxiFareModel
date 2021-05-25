@@ -6,7 +6,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.linear_model import LinearRegression
-
+import mlflow
+from mlflow.tracking import MlflowClient
+from memoized_property import memoized_property
 
 class Trainer():
     def __init__(self, X, y):
@@ -17,6 +19,9 @@ class Trainer():
         self.pipeline = None
         self.X = X
         self.y = y
+        
+        self.mlflow_uri = "https://mlflow.lewagon.co/"
+        self.experiment_name = "[DE] [Berlin] [domzae] TaxiFare + 1"
 
     def build_preproc_pipe(self):
         dist_pipe = Pipeline([
@@ -59,6 +64,28 @@ class Trainer():
         rmse = compute_rmse(y_pred, y_test)
 
         return rmse
+    
+    @memoized_property
+    def mlflow_client(self):
+        mlflow.set_tracking_uri(self.mlflow_uri)
+        return MlflowClient()
+
+    @memoized_property
+    def mlflow_experiment_id(self):
+        try:
+            return self.mlflow_client.create_experiment(self.experiment_name)
+        except BaseException:
+            return self.mlflow_client.get_experiment_by_name(self.experiment_name).experiment_id
+
+    @memoized_property
+    def mlflow_run(self):
+        return self.mlflow_client.create_run(self.mlflow_experiment_id)
+
+    def mlflow_log_param(self, key, value):
+        self.mlflow_client.log_param(self.mlflow_run.info.run_id, key, value)
+
+    def mlflow_log_metric(self, key, value):
+        self.mlflow_client.log_metric(self.mlflow_run.info.run_id, key, value)
 
 
 if __name__ == "__main__":
