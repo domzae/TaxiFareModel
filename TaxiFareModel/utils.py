@@ -1,5 +1,5 @@
 import numpy as np
-
+import haversine as hs
 
 def haversine_vectorized(df,
                          start_lat="pickup_latitude",
@@ -30,7 +30,7 @@ def compute_rmse(y_pred, y_true):
     return np.sqrt(((y_pred - y_true) ** 2).mean())
 
 
-def haversine_distance(df,
+def manhatten_distance(df,
                        start_lat="start_lat",
                        start_lon="start_lon",
                        end_lat="end_lat",
@@ -42,13 +42,20 @@ def haversine_distance(df,
     Computes distance in kms
     """
 
-    lat_1_rad, lon_1_rad = np.radians(df[start_lat].astype(float)), np.radians(df[start_lon].astype(float))
-    lat_2_rad, lon_2_rad = np.radians(df[end_lat].astype(float)), np.radians(df[end_lon].astype(float))
+    lat_1_rad, lon_1_rad = np.radians(df[start_lat].astype(float)),\
+        np.radians(df[start_lon].astype(float))
+    lat_2_rad, lon_2_rad = np.radians(df[end_lat].astype(float)),\
+        np.radians(df[end_lon].astype(float))
     dlon = lon_2_rad - lon_1_rad
     dlat = lat_2_rad - lat_1_rad
 
-    a = np.sin(dlat / 2.0) ** 2 + np.cos(lat_1_rad) * np.cos(lat_2_rad) * np.sin(dlon / 2.0) ** 2
-    c = 2 * np.arcsin(np.sqrt(a))
-    haversine_distance = 6371 * c
+    a = np.sin(dlat / 2.0) ** 2
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+    
+    latdist = 6371 * c
+    
+    a = np.sin(dlat / 2.0) ** 2
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1-a))
+    londist = 6371 * c
 
-    return haversine_distance
+    return latdist + londist

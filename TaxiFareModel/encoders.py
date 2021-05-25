@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from TaxiFareModel.utils import haversine_vectorized
+from TaxiFareModel.utils import haversine_vectorized, manhatten_distance
 
 
 class TimeFeaturesEncoder(BaseEstimator, TransformerMixin):
@@ -59,3 +59,21 @@ class DistanceTransformer(BaseEstimator, TransformerMixin):
         )
 
         return X_[['distance']]
+
+class ManhattenDistanceTransformer(DistanceTransformer):
+    """
+        Computes the manhatten distance between two GPS points.
+        Returns a copy of the DataFrame X with only one column: 'distance'.
+    """
+    def transform(self, X, y=None):
+        assert isinstance(X, pd.DataFrame)
+        X_ = X.copy()
+        X_["manhatten_distance"] = manhatten_distance(
+            X_,
+            start_lat=self.start_lat,
+            start_lon=self.start_lon,
+            end_lat=self.end_lat,
+            end_lon=self.end_lon
+        )
+        
+        return X_[['manhatten_distance']]

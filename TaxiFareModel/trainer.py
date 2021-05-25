@@ -1,14 +1,18 @@
 # imports
 from TaxiFareModel.data import get_data, clean_data, holdout_data
-from TaxiFareModel.encoders import DistanceTransformer, TimeFeaturesEncoder
+from TaxiFareModel.encoders import DistanceTransformer, ManhattenDistanceTransformer, TimeFeaturesEncoder
 from TaxiFareModel.utils import compute_rmse
+
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, SGDRegressor, Lasso, Ridge
+
 import mlflow
 from mlflow.tracking import MlflowClient
 from memoized_property import memoized_property
+import joblib
+
 
 class Trainer():
     def __init__(self, X, y):
@@ -20,12 +24,18 @@ class Trainer():
         self.X = X
         self.y = y
         
+        self.use_manhatten=False
+        self.estimator="LinearRegression"
+        
         self.mlflow_uri = "https://mlflow.lewagon.co/"
         self.experiment_name = "[DE] [Berlin] [domzae] TaxiFare + 1"
 
     def build_preproc_pipe(self):
+        """builds the preprocessing pipeline"""
+        dist = ManhattenDistanceTransformer() if self.use_manhatten else DistanceTransformer()
+    
         dist_pipe = Pipeline([
-            ('dist_trans', DistanceTransformer()),
+            ('dist_trans', dist),
             ('stdscaler', StandardScaler())
         ])
         time_pipe = Pipeline([
@@ -42,17 +52,32 @@ class Trainer():
 
     def set_pipeline(self):
         """defines the pipeline as a class attribute"""
+        estimator_dict = {
+            "LinearRegression": LinearRegression(),
+            "SGDRegressor": SGDRegressor(),
+            "Lasso": Lasso(),
+            "Ridge": Ridge()
+        }
+        
+        # default to LinearRegression
+        if self.estimator not in estimator_dict.keys():
+            self.estimator = "LinearRegression"
 
         preproc_pipe = self.build_preproc_pipe()
         self.pipeline = Pipeline([
             ('preproc', preproc_pipe),
-            ('linear_model', LinearRegression())
+            (self.estimator, estimator_dict[self.estimator])
         ])
 
         return self.pipeline
 
-    def run(self):
+    def run(self, **kwargs):
         """set and train the pipeline"""
+        
+        for k, v in kwargs.items():
+            if k in self.__dict__:
+                self.__dict__[k] = v
+        
         self.set_pipeline()
         self.pipeline.fit(self.X, self.y)
 
@@ -87,6 +112,9 @@ class Trainer():
     def mlflow_log_metric(self, key, value):
         self.mlflow_client.log_metric(self.mlflow_run.info.run_id, key, value)
 
+    def save_model(self):
+        """ Save the trained model into a model.joblib file """
+        joblib.dump(self.pipeline, 'model.joblib')
 
 if __name__ == "__main__":
     # get data
@@ -100,4 +128,8 @@ if __name__ == "__main__":
     trainer.run()
     # evaluate
     rmse = trainer.evaluate(X_test, y_test)
+    #trainer.mlflow_log_param("model", "linear regression")
+    #trainer.mlflow_log_metric("rmse", rmse)
     print(f'rmse: {rmse}')
+
+    trainer.save_model()
